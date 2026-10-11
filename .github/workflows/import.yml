@@ -21,8 +21,8 @@ jobs:
       - name: Download package
         run: |
           set -euo pipefail
-          curl -fsSL -o /tmp/pkg.zip "https://aka.doubaocdn.com/s/XLzcsDDYs9"
-          echo "6dcd32ca45a2b81e33f7576c5a8d2f23  /tmp/pkg.zip" | sha256sum -c -
+          curl -fsSL --retry 3 --retry-delay 5 --max-time 300 -o /tmp/pkg.zip "https://aka.doubaocdn.com/s/XLzcsDDYs9"
+          echo "afdabf1b9849a658985dad9df02a04fd4857f80d4347653a9c96fe1a0069f965  /tmp/pkg.zip" | sha256sum -c -
 
       - name: Extract package into repository root
         run: |
@@ -31,20 +31,20 @@ jobs:
           unzip -q /tmp/pkg.zip -d /tmp/unpack
           cp -a /tmp/unpack/ai-intelligence-ledger/. .
 
-      - name: Verify file hashes
+      - name: Verify every file against SHA256SUMS.txt
         run: |
           set -euo pipefail
-          sha256sum -c SHA256SUMS.txt
+          count=$(sha256sum -c SHA256SUMS.txt 2>/dev/null | grep -c ': OK')
+          echo "verified files: ${count}"
+          test "${count}" -eq 40
 
       - name: Commit and push
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -f .github/workflows/import.yml
           git add -A
-          if git diff --cached --quiet; then
-            echo "No content changes to commit."
-            exit 0
-          fi
+          if git diff --cached --quiet; then echo "No content changes."; exit 0; fi
           git commit -m "Import AI 情报勾稽看板 package (2026-09-25 snapshot)"
           git push origin HEAD:main
