@@ -1,0 +1,50 @@
+name: Import AI intelligence ledger package
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/import.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download package
+        run: |
+          set -euo pipefail
+          curl -fsSL -o /tmp/pkg.zip "https://aka.doubaocdn.com/s/XLzcsDDYs9"
+          echo "6dcd32ca45a2b81e33f7576c5a8d2f23  /tmp/pkg.zip" | sha256sum -c -
+
+      - name: Extract package into repository root
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/unpack
+          unzip -q /tmp/pkg.zip -d /tmp/unpack
+          cp -a /tmp/unpack/ai-intelligence-ledger/. .
+
+      - name: Verify file hashes
+        run: |
+          set -euo pipefail
+          sha256sum -c SHA256SUMS.txt
+
+      - name: Commit and push
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No content changes to commit."
+            exit 0
+          fi
+          git commit -m "Import AI 情报勾稽看板 package (2026-09-25 snapshot)"
+          git push origin HEAD:main
